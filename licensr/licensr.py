@@ -13,32 +13,20 @@ def _start():
     files = get_files(args.path, args.recursive)
     code_files = filter_code_files(files, args.regex)
     license = get_license(args.license)
+    preamble = get_preamble(args.preamble)
 
     if license:
-        add_license_to_files(code_files, license)
-    if args.preamble:
-        add_preamble_to_files(code_files, args.preamble)
+        prepend_commented_text_to_files(code_files, license, epilog='\n'*NEWLINES_AFTER_LICENSE)
+    if preamble:
+        prepend_commented_text_to_files(code_files, preamble, epilog='\n')
 
 
-def add_license_to_files(files, license):
+def prepend_commented_text_to_files(files, text, epilog=''):
     for path, file in files:
-        license_text = get_commented_text_for_file(file, license)
-        if license_text:
+        commented_text = get_commented_text_for_file(file, text)
+        if commented_text:
             prepend_to_file(os.path.join(path, file), 
-                '%s%s' % (license_text, '\n'*NEWLINES_AFTER_LICENSE))
-
-
-def add_preamble_to_files(files, preamble):
-    for path, file in files:
-        if os.path.exists(preamble):
-            with open(preamble, 'r') as f:
-                preamble_text = get_commented_text_for_file(file, f.read())
-        else:
-            preamble_text = get_commented_text_for_file(file, preamble)
-        
-        if preamble_text:
-            prepend_to_file(os.path.join(path, file),
-                '%s\n' % preamble_text)
+                '%s%s' % (commented_text, epilog))
 
 
 def get_commented_text_for_file(file, text):
@@ -87,6 +75,18 @@ def filter_code_files(files, regex=None):
 
     return [(path, name) for path, name in files 
            if re.match(regex, name) is not None]
+
+
+def get_preamble(preamble):
+    if not preamble:
+        return None
+
+    if os.path.exists(preamble):
+        with open(preamble, 'r') as f:
+            preamble_text = f.read()
+        return preamble_text
+    else:
+        return preamble
 
 
 def get_license(license):
