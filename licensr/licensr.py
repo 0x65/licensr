@@ -14,18 +14,18 @@ def _start():
     code_files = filter_code_files(files, args.regex)
     license = get_license(args.license)
 
-    add_license_to_files(code_files, license)
+    if license:
+        add_license_to_files(code_files, license)
     if args.preamble:
         add_preamble_to_files(code_files, args.preamble)
 
 
 def add_license_to_files(files, license):
-    if license:
-        for path, file in files:
-            license_text = get_commented_text_for_file(file, license)
-            if license_text:
-                prepend_to_file(os.path.join(path, file), 
-                    '%s%s' % (license_text, '\n'*NEWLINES_AFTER_LICENSE))
+    for path, file in files:
+        license_text = get_commented_text_for_file(file, license)
+        if license_text:
+            prepend_to_file(os.path.join(path, file), 
+                '%s%s' % (license_text, '\n'*NEWLINES_AFTER_LICENSE))
 
 
 def add_preamble_to_files(files, preamble):
