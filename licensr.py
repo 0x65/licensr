@@ -1,7 +1,7 @@
-import os
-import argparse
-import textwrap
-import re
+from os import path, walk
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from textwrap import dedent
+from re import compile, match
 
 import helpers
 
@@ -25,13 +25,13 @@ def prepend_commented_text_to_files(files, text, epilog=''):
     for path, file in files:
         commented_text = get_commented_text_for_file(file, text)
         if commented_text:
-            prepend_to_file(os.path.join(path, file), 
+            prepend_to_file(path.join(path, file), 
                 '%s%s' % (commented_text, epilog))
 
 
 def get_commented_text_for_file(file, text):
     try:
-        extension = os.path.splitext(file)[1][1:]
+        extension = path.splitext(file)[1][1:]
     except IndexError:
         print "Ignoring file %s - couldn't get the extension of file" % file
         return None
@@ -55,13 +55,14 @@ def get_commented_text_for_file(file, text):
 def prepend_to_file(file, text):
     with open(file, 'r+') as f:
         body = f.read()
-        f.seek(0)
-        f.write(text + body)
+        if not body.startswith(text):
+            f.seek(0)
+            f.write(text + body)
     
 
 def get_files(path, recursive):
     files = []
-    for dirpath, dirname, filenames in os.walk(path, topdown=True):
+    for dirpath, dirname, filenames in walk(path, topdown=True):
         files.extend([(dirpath, filename) for filename in filenames])
         if not recursive: 
             break
@@ -71,17 +72,17 @@ def get_files(path, recursive):
 def filter_code_files(files, regex=None):
     if regex is None:
         regex = r'^[^.].*\.(%s)$' % '|'.join(helpers.language_comments.keys())
-    regex = re.compile(regex)
+    regex = compile(regex)
 
     return [(path, name) for path, name in files 
-           if re.match(regex, name) is not None]
+           if match(regex, name) is not None]
 
 
 def get_preamble(preamble):
     if not preamble:
         return None
 
-    if os.path.exists(preamble):
+    if path.exists(preamble):
         with open(preamble, 'r') as f:
             preamble_text = f.read()
         return preamble_text
@@ -90,7 +91,7 @@ def get_preamble(preamble):
 
 
 def get_license(license):
-    if os.path.exists(license):
+    if path.exists(license):
         with open(license, 'r') as f:
             text = f.read()
         return text
@@ -114,7 +115,7 @@ def parse_args():
     arg_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='Adds common licenses to your source files.',
-        epilog=textwrap.dedent('''
+        epilog=dedent('''
             Valid values for `license`:
             ---------------------------
             <file>\t- A file of your own choosing
